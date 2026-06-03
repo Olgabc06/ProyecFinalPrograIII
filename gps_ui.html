@@ -413,7 +413,7 @@
                     });
 
                     refreshUI();
-                    console.log('✓ Datos cargados desde Java');
+                    console.log('Datos cargados desde Java');
 
                 } catch (err) {
                     // Si el servidor no está corriendo, usar datos de ejemplo
@@ -580,29 +580,46 @@
 
             let nextId = 100;
 
-            function agregarCiudad(){
+            async function agregarCiudad() {
                 const nombre = document.getElementById('in-nombre').value.trim();
-                const lat = parseFloat(document.getElementById('in-lat').value);
-                const lon = parseFloat(document.getElementById('in-lng').value);
-                const alt = parseFloat(document.getElementById('in-alt').value);
+                const lat    = parseFloat(document.getElementById('in-lat').value);
+                const lon    = parseFloat(document.getElementById('in-lng').value);
+                const alt    = parseFloat(document.getElementById('in-alt').value) || 0;
 
                 if (!nombre || isNaN(lat) || isNaN(lon)) {
-                    alert('Completar nombre, latitud y longitud');
+                    alert('Completá nombre, latitud y longitud');
                     return;
                 }
 
                 const id = 'GT' + String(++nextId).padStart(3, '0');
 
-                ciudades.set(id, {id, nombre, lat, lon, alt});
-                aristas.set(id, []);
+                try {
+                    // Mandar la ciudad nueva al servidor Java
+                    const respuesta = await fetch(
+                    `http://localhost:8080/agregarCiudad?id=${id}&nombre=${encodeURIComponent(nombre)}&lat=${lat}&lon=${lon}&alt=${alt}`
+                    );
+                    const data = await respuesta.json();
 
-                document.getElementById('in-nombre').value = '';
-                document.getElementById('in-lat').value = '';
-                document.getElementById('in-lng').value = '';
-                document.getElementById('in-alt').value = '';
+                    if (data.error) {
+                    alert('Error en Java: ' + data.error);
+                    return;
+                    }
 
-                exportarGrafo();
-                refreshUI();
+                    // También guardar localmente para verla en el mapa
+                    ciudades.set(id, { id, nombre, lat, lon, alt });
+                    aristas.set(id, []);
+
+                    // Limpiar campos
+                    document.getElementById('in-nombre').value = '';
+                    document.getElementById('in-lat').value    = '';
+                    document.getElementById('in-lng').value    = '';
+                    document.getElementById('in-alt').value    = '';
+
+                    refreshUI();
+
+                } catch (err) {
+                    alert('No se pudo conectar al servidor Java. ¿Está corriendo?');
+                }
             }
 
             function eliminarCiudad(id){
@@ -622,25 +639,35 @@
                 refreshUI();
             }
 
-            function conectarCiudades(){
-                const idA = document.getElementById('sel-origen').value;
-                const idB = document.getElementById('sel-destino').value;
-                const dist = parseFloat(document.getElementById('in-dist').value) || undefined;
+            async function conectarCiudades() {
+                const idA  = document.getElementById('sel-origen').value;
+                const idB  = document.getElementById('sel-destino').value;
+                const dist = parseFloat(document.getElementById('in-dist').value) || 
+                            Math.round(haversine(ciudades.get(idA), ciudades.get(idB)));
 
-                if (!idA || !idB) {
-                    alert('Seleccionar origen y destino');
+                if (!idA || !idB) { alert('Seleccioná origen y destino'); return; }
+                if (idA === idB)  { alert('Origen y destino son iguales'); return; }
+
+                try {
+                    // Mandar la ruta nueva al servidor Java
+                    const respuesta = await fetch(
+                    `http://localhost:8080/agregarRuta?origen=${idA}&destino=${idB}&dist=${dist}`
+                    );
+                    const data = await respuesta.json();
+
+                    if (data.error) {
+                    alert('Error en Java: ' + data.error);
                     return;
-                }
-                if(idA === idB){
-                    alert('Origen y destino son iguales');
-                    return;
-                }
+                    }
 
-                conectar(idA, idB, dist);
-                document.getElementById('in-dist').value = '';
+                    // También guardar localmente
+                    conectar(idA, idB, dist);
+                    document.getElementById('in-dist').value = '';
+                    refreshUI();
 
-                exportarGrafo();
-                refreshUI();
+                } catch (err) {
+                    alert('No se pudo conectar al servidor Java. ¿Está corriendo?');
+                }
             }
 
             function verificarCamino(){
