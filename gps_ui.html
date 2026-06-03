@@ -781,10 +781,10 @@
                         <span>Distancia total</span><span style="color:var(--verde)">${data.distanciaTotal.toFixed(1)} km</span>
                         </div>
                         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--borde);font-size:11px">
-                        <span>Tiempo estimado</span><span style="color:var(--verde)">${data.tiempoMinutos.toFixed(0)} min</span>
+                        <span>Tiempo estimado</span><span style="color:var(--verde)">${data.tiempoMinutos ? data.tiempoMinutos.toFixed(0) + ' min' : 'N/D'}</span>
                         </div>
                         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--borde);font-size:11px">
-                        <span>Costo peajes</span><span style="color:var(--verde)">Q${data.costoPeajes.toFixed(2)}</span>
+                        <span>Costo peajes</span><span style="color:var(--verde)">${data.costoPeajes ? 'Q' + data.costoPeajes.toFixed(2) : 'Q0.00'}</span>
                         </div>
                     </div>`;
 
