@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>GPS Navegador - Guatemala</title>
+        
+        <!-- fuentes-->
+        <link rel="preconnect" href="https://fonts.googleapis.com"/>
+        <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+        <!-- mapa-->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+        <style>
+            *{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            :root{
+                --verde:   #00c97a;
+                --fondo:   #f5f7f2;
+                --panel:   #ffffff;
+                --borde:   #e2e8e0;
+                --texto:   #1a1f16;
+                --muted:   #8a9e88;
+                --oscuro:  #1e2520;
+            }
+            body{
+                height: 100vh;
+                display: grid;
+                grid-template-rows: 48px 1fr;
+                grid-template-columns: 300px 1fr 280px;
+                grid-template-areas: 
+                "header header header"
+                "left map right";
+                background: var(--fondo);
+            }
+            header{
+                grid-area: header;
+                background: var(--oscuro);
+                display: flex;
+                align-items: center;
+                padding: 0 20px;
+                gap: 16px;
+                border-bottom: 1px solid #252a3a;
+            }
+            header h1{
+                font-family: 'Nunito', sans-serif;
+                font-size: 18px;
+                font-weight: 800;
+                color: var(--verde);
+                letter-spacing: -0.5px;
+            }
+            header h1 span{
+                color: #ffffff;
+            }
+            .badge{
+                font-size: 10px;
+                background: #2e3530;
+                color: #6a8068;
+                padding: 3px 10px;
+                border-radius: 20px;
+                letter-spacing: 1px;
+                font-family: 'Nunito', sans-serif;
+            }
+            .header-right{
+                margin-left: auto;
+                display: flex;
+                gap: 8px;
+            }
+            .header-right button, .header-right label{
+                font-family: 'Nunito', sans-serif;
+                font-size: 12px;
+                font-weight: 600;
+                padding: 5px 14px;
+                border-radius: 20px;
+                border: 1px solid #2e3530;
+                background: transparent;
+                color: #6a8068;
+                cursor: pointer;
+                transition: all .15s;
+            }
+            .header-right button:hover, .header-right label:hover{
+                border-color: var(--verde);
+                color: var(--verde);
+            }
+
+            #panel-izquierdo{
+                grid-area: left;
+                background: var(--panel);
+                color: var(--texto);
+                font-family: 'Nunito', sans-serif;
+                overflow-y: auto;
+                border-right: 1px solid var(--borde);
+            }
+            #mapa{
+                grid-area: map;
+            }
+            #panel-derecho{
+                grid-area: right;
+                background: var(--panel);
+                color: var(--texto);
+                font-family: 'Nunito', sans-serif;
+                overflow-y: auto;
+                border-left: 1px solid var(--borde);
+                display: flex;
+                flex-direction: column;
+            }
+            .seccion{
+                padding: 16px;
+                border-bottom: 1px solid var(--borde);
+            }
+            .seccion-titulo{
+                font-family: 'Nunito', sans-serif;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                color: var(--muted);
+                margin-bottom: 12px;
+            }
+            .campo{
+                margin-bottom: 10px;
+            }
+            .campo label{
+                display: block;
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--muted);
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-bottom: 4px;
+            }
+            .campo input, .campo select{
+                width: 100%;
+                background: var(--fondo);
+                border: 1px solid var(--borde);
+                color: var(--texto);
+                font-family: 'Nunito', sans-serif;
+                font-size: 13px;
+                padding: 8px 12px;
+                border-radius: 10px;
+                outline: none;
+                transition: border-color .15s;
+            }
+            .campo input:focus, .campo select:focus{
+                border-color: var(--verde);
+            }
+            .campo select option{
+                background: var(--panel);
+            }
+            .btn-verde{
+                width: 100%;
+                font-family: 'Nunito', sans-serif;
+                font-size: 13px;
+                font-weight: 600;
+                padding: 9px;
+                border-radius: 10px;
+                border: 2px solid var(--verde);
+                background: transparent;
+                color: var(--verde);
+                cursor: pointer;
+                margin-top: 4px;
+                transition: all .15s;
+            }
+            .btn-verde:hover{
+                background: var(--verde);
+                color: #fff;
+            }
+            .btn-azul{
+                width: 100%;
+                font-family: 'Nunito', sans-serif;
+                font-size: 13px;
+                font-weight: 700;
+                padding: 9px;
+                border-radius: 10px;
+                border: 2px solid #4d9fff;
+                background: transparent;
+                color: #4a9fff;
+                border-radius: 10px;
+                border: 1px solid #4d9fff;
+                background: transparent;
+                color: #4d9fff;
+                cursor: pointer;
+                margin-top: 6px;
+                transition: all .15s;
+            }
+            .btn-azul:hover{
+                background: #4d9fff;
+                color: #fff;
+            }
+
+            #panel-derecho{
+                display: flex;
+                flex-direction: column;
+            }
+            .texto-muted{
+                color: var(--muted);
+                font-size: 12px;
+            }
+            .btn-rojo{
+                width: 100%;
+                font-family: 'Nunito', sans-serif;
+                font-size: 13px;
+                font-weight: 700;
+                padding: 9px;
+                border-radius: 10px;
+                border: 2px solid #ff4d6d;
+                background: transparent;
+                color: #ff4d6d;
+                cursor: pointer;
+                transition: all .15s;
+            }
+            .btn-rojo:hover{
+                background: #ff4d6d;
+                color: #fff;
+            }
+            .btn-rojo:disabled{
+                opacity: 0.3;
+                cursor: not-allowed;
+            }
+            #sim-bar-wrap{
+                display: none;
+                margin-top: 8px;
+                background: var(--borde);
+                border-radius: 4px;
+                height: 4px;
+                overflow: hidden;
+            }
+            #sim-bar{
+                height: 100%;
+                background: #ff6b35;
+                width: 0%;
+                transition: width .4s;
+            }
+            #sim-status{
+                font-size: 11px;
+                color: var(--muted);
+                margin-top: 6px;
+                text-align: center;
+                font-family: 'Nunito', sans-serif;
+            }
+
+        </style>
+
+    </head>
+    <body>
+        <header>
+            <h1>GPS<span>Navegador</span></h1>
+            <span class="badge">Guatemala - WGS84</span>
+
+            <div class="header-right">
+                <button onclick="exportarGrafo()">Exportar</button>
+            </div>
+        </header>
+
+        <aside id="panel-izquierdo">
+            <div class="seccion">
+                <div class ="seccion-titulo">Agregar Ciudad</div>
+                <div class = "campo">
+                    <label>Nombre</label>
+                    <input id="in-nombre" placeholder="ej.Coban"/>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px">
+                <div class="campo">
+                    <label>Latitud</label>
+                    <input id="in-lat" type="number" step="0.0001" placeholder="15.4667"/>
+                </div>
+                <div class="campo">
+                    <label>Longitud</label>
+                    <input id="in-lng" type="number" step="0.0001" placeholder="-90.3667"/>
+                </div>
+            </div>
+
+            <div class="campo">
+                <label>Altitud (m)</label>
+                <input id="in-alt" type="number" placeholder="1316"/>
+            </div>
+
+                <button class="btn-verde" onclick="agregarCiudad()"> + Agregar Ciudad</button>
+            </div>
+
+            <div class="seccion">
+                <div class="seccion-titulo">Conectar Ciudades</div>
+
+                <div class="campo">
+                    <label>Origen</label>
+                    <select id="sel-origen">
+                        <option value="">seleccionar</option>
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label>Destino</label>
+                    <select id="sel-destino">
+                        <option value="">seleccionar</option>
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label>Distancia (km) - opcional</label>
+                    <input id="in-dist" type="number" step="0.1" placeholder="Auto (Haversine)"/>
+                </div>
+
+                <button class="btn-azul" onclick="conectarCiudades()">⟷ Conectar</button>
+            </div>
+
+            <div class="seccion">
+                <div class="seccion-titulo">
+                    Ciudades(<span id="ciudad-count">0</span>)
+                </div>
+                <div id="ciudad-list"></div>
+            </div>
+            
+        </aside>
+
+        <div id="mapa"></div>
+
+        <aside id="panel-derecho">
+            <div class="seccion">
+                <div class="seccion-titulo">Calcular Ruta</div>
+
+                <div class="campo">
+                    <label>Desde</label>
+                    <select id="ruta-origen">
+                        <option value="">— seleccionar —</option>
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label>Hasta</label>
+                    <select id="ruta-destino">
+                        <option value="">— seleccionar —</option>
+                    </select>
+                </div>
+
+                <button class="btn-verde" onclick="calcularRuta()">▶ Dijkstra</button>
+                <button class="btn-azul" style="margin-top: 6px" onclick="verificarCampo()">
+                    Existe camino?
+                </button>
+            </div>
+
+            <div class="seccion" style="flex: 1; overflow-y: auto">
+                <div class="seccion-titulo">Resultado</div>
+                <div id="result-area">
+                    <p class="texto-muted">Selecciona origen y destino para calcular.</p>
+                </div>
+            </div>
+
+            <div class="seccion">
+                <div class="seccion-titulo">Simulacion de Viaje</div>
+                <button class="btn-rojo" id="btn-sim" onclick="simularViaje()" disabled>
+                    ▶ Simular paso a paso
+                </button>
+                <div id="sim-bar-wrap">
+                    <div id="sim-bar"></div>
+                </div>
+                <div id="sim-status"></div>
+            </div>
+        
+        </aside>
+
+        <script>
+            const map = L.map('mapa').setView([14.65, -90.7], 8);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            let capaNodos = L.layerGroup().addTo(map); //ciudades
+            let capaAristas = L.layerGroup().addTo(map); //rutas entre ciudades
+            let capaRuta = L.layerGroup().addTo(map); //ruta caculado con Dijkstra
+            let marcadorSim = null; //marcador de simulacion
+
+            const ciudades = new Map(); //map<id, {id, nombre lat, lon, alt}>
+            const aristas = new Map(); // map<id, [{idDestino, distancia}]>
+
+            const ciudadesInit = [
+                {id: 'GT001', nombre: 'Guatemala City', lat:14.6349, lon:-90.5069, alt:1500},
+                {id: 'GT002', nombre: 'Antigua Guatemala', lat:14.5586, lon:-90.7295, alt:1530},
+                {id: 'GT003', nombre: 'Escuintla', lat: 14.3000, lon:-90.7833, alt:347},
+                {id: 'GT004', nombre: 'Chimaltenango', lat:14.6614, lon:-90.8200, alt:1790},
+                {id: 'GT005', nombre: 'Quetzaltenango', lat:14.8444, lon:-91.5177, alt:2333},
+                {id: 'GT006', nombre: 'Coban', lat:15.4669, lon:-90.3759, alt:1316},
+            ];
+
+            const rutasInit = [
+                ['GT001', 'GT002'], ['GT001', 'GT003'],
+                ['GT001', 'GT004'], ['GT002', 'GT003'],
+                ['GT002', 'GT004'], ['GT004', 'GT005'],
+                ['GT001', 'GT006'],
+            ];
+
+            // Cargar datos desde el servidor Java al abrir la página
+            async function cargarDesdeServidor() {
+                try {
+                    const respuesta = await fetch('http://localhost:8080/mapa');
+                    const data = await respuesta.json();
+
+                    // Cargar ciudades
+                    data.ciudades.forEach(c => {
+                    ciudades.set(c.id, { id: c.id, nombre: c.nombre, lat: c.lat, lon: c.lon, alt: c.alt ?? 0 });
+                    aristas.set(c.id, []);
+                    });
+
+                    // Cargar rutas
+                    data.rutas.forEach(r => {
+                    conectar(r.idOrigen, r.idDestino, r.distancia);
+                    });
+
+                    refreshUI();
+                    console.log('✓ Datos cargados desde Java');
+
+                } catch (err) {
+                    // Si el servidor no está corriendo, usar datos de ejemplo
+                    console.warn('Servidor Java no disponible, usando datos de ejemplo');
+                    ciudadesInit.forEach(c => {
+                    ciudades.set(c.id, c);
+                    aristas.set(c.id, []);
+                    });
+                    rutasInit.forEach(([a, b]) => conectar(a, b));
+                    refreshUI();
+                }
+            }
+
+            cargarDesdeServidor();
+
+
+            function haversine(a, b) {
+                const R = 6371;
+                const r = d => d * Math.PI / 180;
+                const dLat = r(b.lat - a.lat);
+                const dLon = r(b.lon - a.lon);
+                const x = Math.sin(dLat/2)**2 + Math.cos(r(a.lat)) * 
+                            Math.cos(r(b.lat))*
+                            Math.sin(dLon/2)**2;
+                return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+                
+            }
+
+            function conectar(idA, idB, dist){
+                const cA = ciudades.get(idA);
+                const cB = ciudades.get(idB);
+                if (!cA || !cB) return;
+
+                const d = dist ?? haversine(cA, cB);
+
+                const vA = aristas.get(idA);
+                const vB = aristas.get(idB);
+
+                if(!vA.find(v => v.idDestino === idB)) vA.push({ idDestino: idB, distancia: d});
+                if(!vB.find(v => v.idDestino === idA)) vB.push({ idDestino: idA, distancia: d});
+            }
+
+            function renderMapa(){
+                capaNodos.clearLayers();
+                capaAristas.clearLayers();
+
+                const vistas = new Set();
+                for (const [idA, vecinos] of aristas) {
+                    for (const v of vecinos) {
+                        const clave = [idA, v.idDestino].sort().join('|');
+                        if (vistas.has(clave)) continue;
+                        vistas.add(clave);
+
+                        const cA = ciudades.get(idA);
+                        const cB = ciudades.get(v.idDestino);
+                        if (!cA || !cB) continue;
+
+                        L.polyline([[cA.lat, cA.lon],[cB.lat, cB.lon]], {
+                            color: '#252a3a',
+                            weight: 2,
+                            opacity: 0.8
+                        })
+                        .addTo(capaAristas)
+                        .bindTooltip(`${cA.nombre} ↔ ${cB.nombre}<br>${v.distancia.toFixed(1)} km`, {sticky: true});
+                    }
+                }
+
+                for (const c of ciudades.values()) {
+                    const icono = L.divIcon({
+                        className: '',
+                        html: `<div style="
+                            width:14px; height:14px; border-radius:50%;
+                            background:#00e5a0; border:2px solid #fff;
+                            box-shadow:0 0 8px #00e5a088">
+                        </div>`,
+                        iconSize: [14, 14], 
+                        iconAnchor: [7, 7]
+                    });
+
+                    L.marker([c.lat, c.lon], {icon: icono})
+                    .addTo(capaNodos)
+                    .bindPopup(`
+                        <b>${c.nombre}</b><br>
+                        Lat: ${c.lat.toFixed(4)}<br>
+                        Lon: ${c.lon.toFixed(4)}<br>
+                        Alt: ${c.alt} m
+                    `);
+                }
+            }
+
+            renderMapa();
+
+
+            function actualizarSelectores(){
+                const listaCiudades = [...ciudades.values()];
+
+                const selectores = ['sel-origen', 'sel-destino', 'ruta-origen', 'ruta-destino'];
+
+                selectores.forEach(id => {
+                    const sel = document.getElementById(id);
+                    const valorActual = sel.value; //guarda lo que ya tenia seleccionado
+
+                    sel.innerHTML = '<option value="">— seleccionar —</option>';
+                    
+                    listaCiudades.forEach(c => {
+                        const op =document.createElement('option');
+                        op.value = c.id;
+                        op.textContent = c.nombre;
+                        sel.appendChild(op);
+                    });
+
+                    sel.value = valorActual;
+                });
+            }
+
+            function actualizarListaCiudades(){
+                const lista = document.getElementById('ciudad-list');
+                const conteo = document.getElementById('ciudad-count');
+
+                conteo.textContent = ciudades.size;
+                lista.innerHTML = '';
+
+                for (const c of ciudades.values()) {
+                    const div = document.createElement('div');
+                    div.style.cssText= `
+                        display:flex; align-items:center; gap:8px;
+                        padding:7px 10px; border-radius:6px;
+                        cursor:pointer; margin-bottom:2px;
+                        transition: background .1s;
+                    `;
+
+                    div.innerHTML = `
+                        <div style="width:8px;height:8px;border-radius:50%;background:#00e5a0;flex-shrink:0"></div>
+                        <div style="flex:1">
+                            <div style="font-size:12px">${c.nombre}</div>
+                            <div style="font-size:10px;color:#5a6280">${c.lat.toFixed(4)}, ${c.lon.toFixed(4)} · ${c.alt}m</div>
+                        </div>
+                        <button onclick="eliminarCiudad('${c.id}')" style="
+                            font-size:10px; color:#ff4d6d; background:transparent;
+                            border:none; cursor:pointer; font-family:'DM Mono',monospace;
+                            opacity:0; padding:2px 5px;
+                        ">✕</button>
+                    `;
+
+                    div.onmouseenter = () => div.querySelector('button').style.opacity = '1';
+                    div.onmouseleave = () => div.querySelector('button').style.opacity = '0';
+
+                    div.onclick = (e) => {
+                        if(e.target.tagName === 'BUTTON') return;
+                        map.setView([c.lat, c.lon], 11);
+                    };
+
+                    lista.appendChild(div);
+                }
+            }
+
+            function refreshUI() {
+                renderMapa();
+                actualizarSelectores();
+                actualizarListaCiudades();
+            }
+
+            refreshUI();
+
+            let nextId = 100;
+
+            function agregarCiudad(){
+                const nombre = document.getElementById('in-nombre').value.trim();
+                const lat = parseFloat(document.getElementById('in-lat').value);
+                const lon = parseFloat(document.getElementById('in-lng').value);
+                const alt = parseFloat(document.getElementById('in-alt').value);
+
+                if (!nombre || isNaN(lat) || isNaN(lon)) {
+                    alert('Completar nombre, latitud y longitud');
+                    return;
+                }
+
+                const id = 'GT' + String(++nextId).padStart(3, '0');
+
+                ciudades.set(id, {id, nombre, lat, lon, alt});
+                aristas.set(id, []);
+
+                document.getElementById('in-nombre').value = '';
+                document.getElementById('in-lat').value = '';
+                document.getElementById('in-lng').value = '';
+                document.getElementById('in-alt').value = '';
+
+                exportarGrafo();
+                refreshUI();
+            }
+
+            function eliminarCiudad(id){
+                const c = ciudades.get(id);
+                if(!c) return;
+
+                for(const [, vecinos] of aristas) {
+                    const i = vecinos.findIndex(v => v.idDestino === id);
+                    if(i !== -1) vecinos.splice(i, 1);
+                }
+
+                ciudades.delete(id);
+                aristas.delete(id);
+
+                exportarGrafo();
+
+                refreshUI();
+            }
+
+            function conectarCiudades(){
+                const idA = document.getElementById('sel-origen').value;
+                const idB = document.getElementById('sel-destino').value;
+                const dist = parseFloat(document.getElementById('in-dist').value) || undefined;
+
+                if (!idA || !idB) {
+                    alert('Seleccionar origen y destino');
+                    return;
+                }
+                if(idA === idB){
+                    alert('Origen y destino son iguales');
+                    return;
+                }
+
+                conectar(idA, idB, dist);
+                document.getElementById('in-dist').value = '';
+
+                exportarGrafo();
+                refreshUI();
+            }
+
+            function verificarCamino(){
+                const idA = document.getElementById('ruta-origen').value;
+                const idB = document.getElementById('ruta-destino').value;
+
+                if(!idA || !idB){
+                    alert('Seleccionar origen y destino');
+                    return;
+                }
+
+                const visitados = new Set();
+                const cola = [idA];
+
+                while(cola.length > 0){
+                    const actual = cola.shift();
+                    if(actual === idB){
+                        const cA = ciudades.get(idA);
+                        const cB = ciudades.get(idB);
+                        document.getElementById('result-area').innerHTML = `
+                            <p style="color:#00e5a0;font-size:12px">
+                                ✓ Sí existe camino entre<br>
+                                <b>${cA.nombre}</b> y <b>${cB.nombre}</b>
+                            </p>`;
+                        return;
+                    }
+                    if(visitados.has(actual)) continue;
+                    visitados.add(actual);
+
+                    for(const v of (aristas.get(actual) ?? [])) {
+                        if (!visitados.has(v.idDestino)) cola.push(v.idDestino);
+                    }
+                }
+
+                const cA = ciudades.get(idA);
+                const cB = ciudades.get(idB);
+                document.getElementById('result-area').innerHTML = `
+                    <p style="color:#ff4d6d;font-size:12px">
+                        ✗ No existe camino entre<br>
+                        <b>${cA.nombre}</b> y <b>${cB.nombre}</b>
+                    </p>`;
+            }
+
+            async function calcularRuta() {
+                const idOrigen  = document.getElementById('ruta-origen').value;
+                const idDestino = document.getElementById('ruta-destino').value;
+
+                if (!idOrigen || !idDestino) {
+                    alert('Seleccioná origen y destino');
+                    return;
+                }
+
+                //pide la ruta al servidor Java (NetBeans) que corre el algoritmo de Dijkstra y devuelve la ruta con sus datos
+                try {
+                    const respuesta = await fetch(
+                    `http://localhost:8080/ruta?origen=${idOrigen}&destino=${idDestino}`
+                    );
+                    const data = await respuesta.json();
+
+                    if (data.error) {
+                    document.getElementById('result-area').innerHTML =
+                        `<p style="color:#ff4d6d;font-size:12px">✗ ${data.error}</p>`;
+                    document.getElementById('btn-sim').disabled = true;
+                    rutaActual = null;
+                    return;
+                    }
+
+                    // Guardar ruta para la simulación
+                    rutaActual = {
+                    path: data.paradas.map(p => p.id),
+                    distanciaTotal: data.distanciaTotal
+                    };
+
+                    // Agregar las ciudades de la ruta al mapa local si no existen
+                    data.paradas.forEach(p => {
+                    if (!ciudades.has(p.id)) {
+                        ciudades.set(p.id, { id: p.id, nombre: p.nombre, lat: p.lat, lon: p.lon, alt: 0 });
+                        aristas.set(p.id, []);
+                    }
+                    });
+
+                    document.getElementById('btn-sim').disabled = false;
+
+                    // Dibujar ruta en el mapa
+                    capaRuta.clearLayers();
+                    const coords = data.paradas.map(p => [p.lat, p.lon]);
+                    L.polyline(coords, { color:'#00c97a', weight:4, opacity:.9 }).addTo(capaRuta);
+
+                    data.paradas.forEach((p, i) => {
+                    const color = i === 0 ? '#ff6b35' : i === data.paradas.length - 1 ? '#4d9fff' : '#00c97a';
+                    const icono = L.divIcon({
+                        className: '',
+                        html: `<div style="width:14px;height:14px;border-radius:50%;
+                            background:${color};border:2px solid #fff;
+                            box-shadow:0 0 8px ${color}88"></div>`,
+                        iconSize: [14,14], iconAnchor: [7,7]
+                    });
+                    L.marker([p.lat, p.lon], { icon: icono }).addTo(capaRuta)
+                        .bindPopup(`<b>${i+1}. ${p.nombre}</b>`);
+                    });
+
+                    map.fitBounds(L.polyline(coords).getBounds(), { padding:[30,30] });
+
+                    // Mostrar resultado en el panel
+                    let html = `
+                    <div style="margin-bottom:10px">
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--borde);font-size:11px">
+                        <span>Paradas</span><span style="color:var(--verde)">${data.paradas.length}</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--borde);font-size:11px">
+                        <span>Distancia total</span><span style="color:var(--verde)">${data.distanciaTotal.toFixed(1)} km</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--borde);font-size:11px">
+                        <span>Tiempo estimado</span><span style="color:var(--verde)">${data.tiempoMinutos.toFixed(0)} min</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--borde);font-size:11px">
+                        <span>Costo peajes</span><span style="color:var(--verde)">Q${data.costoPeajes.toFixed(2)}</span>
+                        </div>
+                    </div>`;
+
+                    data.paradas.forEach((p, i) => {
+                    html += `
+                        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--borde)">
+                        <div style="width:22px;height:22px;border-radius:50%;background:var(--verde);
+                                    color:#fff;font-size:10px;font-weight:700;
+                                    display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                            ${i+1}
+                        </div>
+                        <div>
+                            <div style="font-size:12px">${p.nombre}</div>
+                            <div style="font-size:10px;color:var(--muted)">
+                            ${i === 0 ? 'Punto de partida' : `Parada ${i+1}`}
+                            </div>
+                        </div>
+                        </div>`;
+                    });
+
+                    document.getElementById('result-area').innerHTML = html;
+
+                } catch (err) {
+                    alert('No se pudo conectar al servidor Java. ¿Está corriendo en NetBeans?');
+                }
+            }
+
+            let rutaActual =  null;
+
+            let simTimeout = null;
+
+            function simularViaje() {
+                if(!rutaActual) {
+                    alert('Calcular una ruta primero');
+                    return;
+                }
+
+                if(marcadorSim) map.removeLayer(marcadorSim);
+                clearTimeout(simTimeout);
+
+                const path =  rutaActual.path;
+                const btn = document.getElementById('btn-sim');
+                const status = document.getElementById('sim-status');
+                const bar = document.getElementById('sim-bar');
+                const barWrap = document.getElementById('sim-bar-wrap');
+
+                barWrap.style.display = 'block';
+                bar.style.width = '0%';
+                btn.disabled = true;
+
+                const iconoVehiculo = L.divIcon({
+                    className: '',
+                    html: `<div style="
+                        width:16px; height:16px; border-radius:50%;
+                        background:#ff6b35; border:2px solid #fff;
+                        box-shadow:0 0 12px #ff6b3588">
+                    </div>`,
+                    iconSize: [16,16],
+                    iconAnchor: [8,8]
+                });
+
+                const c0 = ciudades.get(path[0]);
+                marcadorSim = L.marker([c0.lat, c0.lon], {icon: iconoVehiculo }).addTo(map);
+
+                let i = 0;
+
+                function paso() {
+                    if (i >= path.length) {
+                        btn.disabled = false;
+                        status.textContent = 'Viaje completado!!';
+                        return;
+                    }
+
+                    const c = ciudades.get(path[i]);
+
+                    marcadorSim.setLatLng([c.lat, c.lon]);
+                    map.panTo([c.lat, c.lon], {animate: true, duration: 0.5 });
+
+                    status.textContent = `${i+1}/${path.length} — ${c.nombre}`;
+                    bar.style.width = `${((i+1) / path.length) * 100}%`;
+
+                    document.querySelectorAll('#result-area > div > div:last-child > div').forEach((el, idx) => {
+                        el.style.background = idx === i ? 'rgba(0,229,160,.08)' : '';
+                    });
+
+                    i++;
+                    simTimeout = setTimeout(paso, 1400);
+                }
+
+                paso();
+            }
+
+            function exportarGrafo() {
+                const rutas = [];
+                const vistas = new Set();
+
+                for (const [idA, vecinos] of aristas) {
+                    for (const v of vecinos) {
+                        const clave = [idA, v.idDestino].sort().join('|');
+                        if (vistas.has(clave)) continue;
+                        vistas.add(clave);
+                        rutas.push({idOrigen: idA, idDestino: v.idDestino, distancia: v.distancia });
+                    }
+                }
+
+                const data = {
+                    ciudades: [...ciudades.values()],
+                    rutas
+                };
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'grafo_gps.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            function importarGrafo(event) {
+                const file =  event.target.files[0];
+                if(!file) return;
+
+                const reader = new FileReader();
+
+                reader.onload = e => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+
+                        ciudades.clear();
+                        aristas.clear();
+
+                        for(const c of data.ciudades) {
+                           const ciudad = {
+                            id: c.id,
+                            nombre: c.nombre,
+                            lat: c.lat ?? c.latitud ?? c.latitudWGS,
+                            lon: c.lon ?? c.longitud ?? c.longitudWGS,
+                            alt: c.alt ?? c.altitud ?? c.altitudWGS ?? 0
+                           };
+                           ciudades .set(ciudad.id, ciudad);
+                           aristas.set(ciudad.id, []);
+                        }
+
+                        for (const r of data.rutas) {
+                            const idA = r.idOrigen ?? r.origen;
+                            const idB = r.idDestino ?? r.destino;
+                            const dist = r.distancia ?? r.distancia_km ?? undefined;
+                            conectar(idA, idB, dist);
+                        }
+
+                        rutaActual = null;
+                        capaRuta.clearLayers();
+                        document.getElementById('result-area').innerHTML = 
+                            '<p class="texto-muted">Grafo cargado. Calculá una ruta.</p>';
+                        document.getElementById('btn-sim').disabled = true;
+
+                        refreshUI();
+                        alert('Grafo importado correctamente');
+                    } catch(err) {
+                        alert('Error al importar: ' + err.message);
+                    }
+                };
+
+                reader.readAsText(file);
+                event.target.value = '';
+            }
+
+        </script>
+
+    </body>
+</html>
