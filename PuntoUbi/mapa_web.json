@@ -1,0 +1,261 @@
+{
+  "ciudades": [
+    {
+      "id": "ANT",
+      "nombre": "Antigua Guatemala (Centro)",
+      "latitud": 14.5573,
+      "longitud": -90.7332,
+      "altura": 1530.0
+    },
+    {
+      "id": "CV",
+      "nombre": "Ciudad Vieja",
+      "latitud": 14.5256,
+      "longitud": -90.7694,
+      "altura": 1550.0
+    },
+    {
+      "id": "JOC",
+      "nombre": "Jocotenango",
+      "latitud": 14.585,
+      "longitud": -90.743,
+      "altura": 1490.0
+    },
+    {
+      "id": "SMP",
+      "nombre": "San Miguel Dueñas",
+      "latitud": 14.5217,
+      "longitud": -90.7967,
+      "altura": 1580.0
+    },
+    {
+      "id": "SAC",
+      "nombre": "Santiago Sacatepéquez",
+      "latitud": 14.6356,
+      "longitud": -90.6786,
+      "altura": 1620.0
+    },
+    {
+      "id": "PAST",
+      "nombre": "Pastores",
+      "latitud": 14.595,
+      "longitud": -90.755,
+      "altura": 1570.0
+    },
+    {
+      "id": "SJPC",
+      "nombre": "San Juan del Obispo",
+      "latitud": 14.545,
+      "longitud": -90.71,
+      "altura": 1680.0
+    },
+    {
+      "id": "SMC",
+      "nombre": "Santa María de Jesús",
+      "latitud": 14.515,
+      "longitud": -90.72,
+      "altura": 2100.0
+    },
+    {
+      "id": "Z1",
+      "nombre": "Zona 1 - Centro Histórico",
+      "latitud": 14.6407,
+      "longitud": -90.5133,
+      "altura": 1490.0
+    },
+    {
+      "id": "Z10",
+      "nombre": "Zona 10 - Zona Viva",
+      "latitud": 14.603,
+      "longitud": -90.508,
+      "altura": 1520.0
+    },
+    {
+      "id": "CAY",
+      "nombre": "Cayalá",
+      "latitud": 14.611,
+      "longitud": -90.486,
+      "altura": 1540.0
+    },
+    {
+      "id": "AIR",
+      "nombre": "Aeropuerto La Aurora",
+      "latitud": 14.5833,
+      "longitud": -90.5275,
+      "altura": 1509.0
+    },
+    {
+      "id": "TIN",
+      "nombre": "Tikal Futura, Zona 7",
+      "latitud": 14.621,
+      "longitud": -90.52,
+      "altura": 1500.0
+    },
+    {
+      "id": "OBRA",
+      "nombre": "Obrajes, Zona 10",
+      "latitud": 14.598,
+      "longitud": -90.515,
+      "altura": 1530.0
+    },
+    {
+      "id": "UMG",
+      "nombre": "Universidad Mariano Gálvez",
+      "latitud": 14.582,
+      "longitud": -90.745,
+      "altura": 1480.0
+    }
+  ],
+  "rutas": [
+    {
+      "origen": "ANT",
+      "destino": "Z1",
+      "distancia_km": 25.41
+    },
+    {
+      "origen": "ANT",
+      "destino": "CV",
+      "distancia_km": 5.25
+    },
+    {
+      "origen": "ANT",
+      "destino": "JOC",
+      "distancia_km": 3.26
+    },
+    {
+      "origen": "ANT",
+      "destino": "PAST",
+      "distancia_km": 4.80
+    },
+    {
+      "origen": "ANT",
+      "destino": "SJPC",
+      "distancia_km": 2.85
+    },
+    {
+      "origen": "ANT",
+      "destino": "SAC",
+      "distancia_km": 10.50
+    },
+    {
+      "origen": "ANT",
+      "destino": "UMG",
+      "distancia_km": 3.03
+    },
+    {
+      "origen": "CV",
+      "destino": "SMP",
+      "distancia_km": 2.97
+    },
+    {
+      "origen": "CV",
+      "destino": "JOC",
+      "distancia_km": 7.19
+    },
+    {
+      "origen": "CV",
+      "destino": "UMG",
+      "distancia_km": 6.80
+    },
+    {
+      "origen": "JOC",
+      "destino": "Z10",
+      "distancia_km": 25.37
+    },
+    {
+      "origen": "JOC",
+      "destino": "SAC",
+      "distancia_km": 8.93
+    },
+    {
+      "origen": "JOC",
+      "destino": "PAST",
+      "distancia_km": 1.70
+    },
+    {
+      "origen": "JOC",
+      "destino": "UMG",
+      "distancia_km": 0.40
+    },
+    {
+      "origen": "SAC",
+      "destino": "TIN",
+      "distancia_km": 17.14
+    },
+    {
+      "origen": "SAC",
+      "destino": "UMG",
+      "distancia_km": 9.30
+    },
+    {
+      "origen": "PAST",
+      "destino": "UMG",
+      "distancia_km": 1.80
+    },
+    {
+      "origen": "SJPC",
+      "destino": "UMG",
+      "distancia_km": 5.58
+    },
+    {
+      "origen": "SMC",
+      "destino": "SMP",
+      "distancia_km": 8.29
+    },
+    {
+      "origen": "Z1",
+      "destino": "Z10",
+      "distancia_km": 4.23
+    },
+    {
+      "origen": "CAY",
+      "destino": "Z10",
+      "distancia_km": 2.53
+    },
+    {
+      "origen": "CAY",
+      "destino": "TIN",
+      "distancia_km": 3.82
+    },
+    {
+      "origen": "CAY",
+      "destino": "SAC",
+      "distancia_km": 20.90
+    },
+    {
+      "origen": "AIR",
+      "destino": "Z10",
+      "distancia_km": 3.03
+    },
+    {
+      "origen": "AIR",
+      "destino": "Z1",
+      "distancia_km": 6.56
+    },
+    {
+      "origen": "AIR",
+      "destino": "OBRA",
+      "distancia_km": 2.12
+    },
+    {
+      "origen": "AIR",
+      "destino": "CAY",
+      "distancia_km": 5.42
+    },
+    {
+      "origen": "AIR",
+      "destino": "ANT",
+      "distancia_km": 22.33
+    },
+    {
+      "origen": "TIN",
+      "destino": "Z1",
+      "distancia_km": 2.31
+    },
+    {
+      "origen": "OBRA",
+      "destino": "Z10",
+      "distancia_km": 0.94
+    }
+  ]
+}
