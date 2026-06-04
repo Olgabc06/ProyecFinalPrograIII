@@ -375,6 +375,7 @@
             let capaAristas = L.layerGroup().addTo(map); //rutas entre ciudades
             let capaRuta = L.layerGroup().addTo(map); //ruta caculado con Dijkstra
             let marcadorSim = null; //marcador de simulacion
+            let rutaActual =  null;
 
             const ciudades = new Map(); //map<id, {id, nombre lat, lon, alt}>
             const aristas = new Map(); // map<id, [{idDestino, distancia}]>
@@ -503,9 +504,6 @@
                     `);
                 }
             }
-
-            renderMapa();
-
 
             function actualizarSelectores(){
                 const listaCiudades = [...ciudades.values()];
@@ -720,99 +718,46 @@
                     return;
                 }
 
-                //pide la ruta al servidor Java (NetBeans) que corre el algoritmo de Dijkstra y devuelve la ruta con sus datos
-                try {
-                    const respuesta = await fetch(
-                    `http://localhost:8080/ruta?origen=${idOrigen}&destino=${idDestino}`
-                    );
-                    const data = await respuesta.json();
+                const todosCaminos = encontrarTodosLosCaminos(idOrigen, idDestino);
 
-                    if (data.error) {
+                if (todosCaminos.length === 0) {
                     document.getElementById('result-area').innerHTML =
-                        `<p style="color:#ff4d6d;font-size:12px">✗ ${data.error}</p>`;
+                    `<p style="color:#ff4d6d;font-size:12px">✗ No existe ningún camino.</p>`;
                     document.getElementById('btn-sim').disabled = true;
                     rutaActual = null;
                     return;
-                    }
-
-                    // Guardar ruta para la simulación
-                    rutaActual = {
-                    path: data.paradas.map(p => p.id),
-                    distanciaTotal: data.distanciaTotal
-                    };
-
-                    // Agregar las ciudades de la ruta al mapa local si no existen
-                    data.paradas.forEach(p => {
-                    if (!ciudades.has(p.id)) {
-                        ciudades.set(p.id, { id: p.id, nombre: p.nombre, lat: p.lat, lon: p.lon, alt: 0 });
-                        aristas.set(p.id, []);
-                    }
-                    });
-
-                    document.getElementById('btn-sim').disabled = false;
-
-                    // Dibujar ruta en el mapa
-                    capaRuta.clearLayers();
-                    const coords = data.paradas.map(p => [p.lat, p.lon]);
-                    L.polyline(coords, { color:'#00c97a', weight:4, opacity:.9 }).addTo(capaRuta);
-
-                    data.paradas.forEach((p, i) => {
-                    const color = i === 0 ? '#ff6b35' : i === data.paradas.length - 1 ? '#4d9fff' : '#00c97a';
-                    const icono = L.divIcon({
-                        className: '',
-                        html: `<div style="width:14px;height:14px;border-radius:50%;
-                            background:${color};border:2px solid #fff;
-                            box-shadow:0 0 8px ${color}88"></div>`,
-                        iconSize: [14,14], iconAnchor: [7,7]
-                    });
-                    L.marker([p.lat, p.lon], { icon: icono }).addTo(capaRuta)
-                        .bindPopup(`<b>${i+1}. ${p.nombre}</b>`);
-                    });
-
-                    map.fitBounds(L.polyline(coords).getBounds(), { padding:[30,30] });
-
-                    // Mostrar resultado en el panel
-                    let html = `
-                    <div style="margin-bottom:10px">
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--borde);font-size:11px">
-                        <span>Paradas</span><span style="color:var(--verde)">${data.paradas.length}</span>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--borde);font-size:11px">
-                        <span>Distancia total</span><span style="color:var(--verde)">${data.distanciaTotal.toFixed(1)} km</span>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--borde);font-size:11px">
-                        <span>Tiempo estimado</span><span style="color:var(--verde)">${data.tiempoMinutos ? data.tiempoMinutos.toFixed(0) + ' min' : 'N/D'}</span>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--borde);font-size:11px">
-                        <span>Costo peajes</span><span style="color:var(--verde)">${data.costoPeajes ? 'Q' + data.costoPeajes.toFixed(2) : 'Q0.00'}</span>
-                        </div>
-                    </div>`;
-
-                    data.paradas.forEach((p, i) => {
-                    html += `
-                        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--borde)">
-                        <div style="width:22px;height:22px;border-radius:50%;background:var(--verde);
-                                    color:#fff;font-size:10px;font-weight:700;
-                                    display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                            ${i+1}
-                        </div>
-                        <div>
-                            <div style="font-size:12px">${p.nombre}</div>
-                            <div style="font-size:10px;color:var(--muted)">
-                            ${i === 0 ? 'Punto de partida' : `Parada ${i+1}`}
-                            </div>
-                        </div>
-                        </div>`;
-                    });
-
-                    document.getElementById('result-area').innerHTML = html;
-
-                } catch (err) {
-                    alert('No se pudo conectar al servidor Java. ¿Está corriendo en NetBeans?');
                 }
-            }
 
-            let rutaActual =  null;
+                let html = `<div style="margin-bottom:10px;font-size:11px;color:var(--muted)">
+                    Se encontraron <b style="color:var(--verde)">${todosCaminos.length}</b> caminos posibles
+                </div>`;
+
+                todosCaminos.forEach((camino, idx) => {
+                    const nombres = camino.path.map(id => ciudades.get(id)?.nombre ?? id).join(' → ');
+                    const esMasCorto = idx === 0;
+                    html += `
+                    <div class="tarjeta-camino" onclick="seleccionarCamino(${idx})" style="
+                        padding:10px; margin-bottom:6px; border-radius:8px;
+                        border:1px solid ${esMasCorto ? 'var(--verde)' : 'var(--borde)'};
+                        background:${esMasCorto ? 'rgba(0,201,122,.08)' : 'transparent'};
+                        cursor:pointer;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                        <span style="font-size:11px;font-weight:700;color:${esMasCorto ? 'var(--verde)' : 'var(--texto)'}">
+                            ${esMasCorto ? '⭐ Más corto' : `Camino ${idx + 1}`}
+                        </span>
+                        <span style="font-size:11px;color:var(--verde)">${camino.distancia.toFixed(1)} km</span>
+                        </div>
+                        <div style="font-size:10px;color:var(--muted)">${nombres}</div>
+                        <div style="font-size:10px;color:var(--muted);margin-top:2px">${camino.path.length} paradas</div>
+                    </div>`;
+                });
+
+                    html += `<div id="info-camino"></div>`;
+
+                document.getElementById('result-area').innerHTML = html;
+                window.todosCaminosActuales = todosCaminos;
+                seleccionarCamino(0);
+            }
 
             let simTimeout = null;
 
@@ -904,53 +849,101 @@
                 URL.revokeObjectURL(url);
             }
 
-            function importarGrafo(event) {
-                const file =  event.target.files[0];
-                if(!file) return;
+            function encontrarTodosLosCaminos(origen, destino) {
+                const caminos = [];
+                const visitados = new Set();
 
-                const reader = new FileReader();
-
-                reader.onload = e => {
-                    try {
-                        const data = JSON.parse(e.target.result);
-
-                        ciudades.clear();
-                        aristas.clear();
-
-                        for(const c of data.ciudades) {
-                           const ciudad = {
-                            id: c.id,
-                            nombre: c.nombre,
-                            lat: c.lat ?? c.latitud ?? c.latitudWGS,
-                            lon: c.lon ?? c.longitud ?? c.longitudWGS,
-                            alt: c.alt ?? c.altitud ?? c.altitudWGS ?? 0
-                           };
-                           ciudades .set(ciudad.id, ciudad);
-                           aristas.set(ciudad.id, []);
-                        }
-
-                        for (const r of data.rutas) {
-                            const idA = r.idOrigen ?? r.origen;
-                            const idB = r.idDestino ?? r.destino;
-                            const dist = r.distancia ?? r.distancia_km ?? undefined;
-                            conectar(idA, idB, dist);
-                        }
-
-                        rutaActual = null;
-                        capaRuta.clearLayers();
-                        document.getElementById('result-area').innerHTML = 
-                            '<p class="texto-muted">Grafo cargado. Calculá una ruta.</p>';
-                        document.getElementById('btn-sim').disabled = true;
-
-                        refreshUI();
-                        alert('Grafo importado correctamente');
-                    } catch(err) {
-                        alert('Error al importar: ' + err.message);
+                function dfs(actual, camino, distancia) {
+                    if (actual === destino) {
+                    caminos.push({ path: [...camino], distancia });
+                    return;
                     }
-                };
+                    visitados.add(actual);
+                    for (const v of (aristas.get(actual) ?? [])) {
+                    if (!visitados.has(v.idDestino)) {
+                        camino.push(v.idDestino);
+                        dfs(v.idDestino, camino, distancia + v.distancia);
+                        camino.pop();
+                    }
+                    }
+                    visitados.delete(actual);
+                }
 
-                reader.readAsText(file);
-                event.target.value = '';
+                dfs(origen, [origen], 0);
+
+                // Ordenar de menor a mayor distancia
+                caminos.sort((a, b) => a.distancia - b.distancia);
+                return caminos;
+            }
+
+            async function seleccionarCamino(idx) {
+                const camino = window.todosCaminosActuales[idx];
+                if (!camino) return;
+
+                rutaActual = { path: camino.path, distanciaTotal: camino.distancia };
+                document.getElementById('btn-sim').disabled = false;
+
+                // Resaltar la tarjeta seleccionada
+                document.querySelectorAll('.tarjeta-camino').forEach((el, i) => {
+                    el.style.border = i === idx ? '2px solid var(--verde)' : '1px solid var(--borde)';
+                    el.style.background = i === idx ? 'rgba(0,201,122,.12)' : 'transparent';
+                });
+
+                // Dibujar en el mapa
+                capaRuta.clearLayers();
+                const coords = camino.path.map(id => {
+                    const c = ciudades.get(id);
+                    return [c.lat, c.lon];
+                });
+
+                L.polyline(coords, { color:'#00c97a', weight:4, opacity:.9 }).addTo(capaRuta);
+
+                camino.path.forEach((id, i) => {
+                    const c = ciudades.get(id);
+                    const color = i === 0 ? '#ff6b35' : i === camino.path.length - 1 ? '#4d9fff' : '#00c97a';
+                    const icono = L.divIcon({
+                        className: '',
+                        html: `<div style="width:14px;height:14px;border-radius:50%;
+                            background:${color};border:2px solid #fff;
+                            box-shadow:0 0 8px ${color}88"></div>`,
+                        iconSize: [14,14], iconAnchor: [7,7]
+                    });
+                    L.marker([c.lat, c.lon], { icon: icono }).addTo(capaRuta)
+                        .bindPopup(`<b>${i+1}. ${c.nombre}</b>`);
+                });
+
+                map.fitBounds(L.polyline(coords).getBounds(), { padding:[30,30] });
+
+                try {
+                    const respuesta = await fetch('http://localhost:8080/calcularCamino', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            paradas: camino.path,
+                            hora: new Date().getHours() // hora actual del sistema
+                        })
+                    });
+                    
+                    const data = await respuesta.json();
+
+                    document.getElementById('info-camino').innerHTML = `
+                        <div style="margin-top:10px;padding:10px;background:var(--fondo);border-radius:8px;font-size:11px">
+                            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--borde)">
+                                <span>Distancia</span>
+                                <span style="color:var(--verde)">${data.distanciaTotal.toFixed(1)} km</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--borde)">
+                                <span>Tiempo estimado</span>
+                                <span style="color:var(--verde)">${data.tiempoMinutos} min</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:4px 0">
+                                <span>Costo peajes</span>
+                                <span style="color:var(--verde)">Q${data.costoPeajes.toFixed(2)}</span>
+                            </div>
+                        </div>`;
+                } catch(err) {
+                    document.getElementById('info-camino').innerHTML = '';
+                }
             }
 
         </script>
