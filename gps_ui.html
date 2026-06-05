@@ -338,6 +338,31 @@
                     </select>
                 </div>
 
+                <div class="campo">
+                    <label>Hora de salida</label>
+                    <select id="ruta-hora">
+                        <option value="0">00:00 — Madrugada</option>
+                        <option value="6">06:00 — Mañana</option>
+                        <option value="7">07:00 — Hora pico mañana</option>
+                        <option value="8">08:00 — Hora pico mañana</option>
+                        <option value="12" selected>12:00 — Mediodía</option>
+                        <option value="14">14:00 — Tarde</option>
+                        <option value="17">17:00 — Hora pico tarde</option>
+                        <option value="18">18:00 — Hora pico tarde</option>
+                        <option value="20">20:00 — Noche</option>
+                        <option value="22">22:00 — Noche</option>
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label>Condición del clima</label>
+                    <select id="ruta-condicion">
+                        <option value="NORMAL">☀️ Normal</option>
+                        <option value="LLUVIA">🌧️ Lluvia</option>
+                        <option value="ACCIDENTE">⚠️ Accidente</option>
+                    </select>
+                </div>
+
                 <button class="btn-verde" onclick="calcularRuta()">▶ Dijkstra</button>
                 <button class="btn-azul" style="margin-top: 6px" onclick="verificarCamino()">
                     Existe camino?
@@ -919,15 +944,27 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
-                            paradas: camino.path,
-                            hora: new Date().getHours() // hora actual del sistema
+                        paradas: camino.path,
+                        hora: parseInt(document.getElementById('ruta-hora').value),
+                        condicion: document.getElementById('ruta-condicion').value
                         })
                     });
-                    
+
                     const data = await respuesta.json();
+
+                    const horaSeleccionada = document.getElementById('ruta-hora').value;
+                    const condicionSeleccionada = document.getElementById('ruta-condicion').options[document.getElementById('ruta-condicion').selectedIndex].text;
 
                     document.getElementById('info-camino').innerHTML = `
                         <div style="margin-top:10px;padding:10px;background:var(--fondo);border-radius:8px;font-size:11px">
+                            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--borde)">
+                                <span>Hora de salida</span>
+                                <span style="color:var(--verde)">${horaSeleccionada}:00 hrs</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--borde)">
+                                <span>Condición</span>
+                                <span style="color:var(--verde)">${condicionSeleccionada}</span>
+                            </div>
                             <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--borde)">
                                 <span>Distancia</span>
                                 <span style="color:var(--verde)">${data.distanciaTotal.toFixed(1)} km</span>
